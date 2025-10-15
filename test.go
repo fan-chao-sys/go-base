@@ -1,5 +1,5 @@
 // 包声明
-package GoBase
+package main
 
 // 引入包声明, 单个不带括号，多个括号逗号隔开
 import (
@@ -7,21 +7,19 @@ import (
 )
 
 // 函数声明
-func printInConsole(s string) {
+// PrintInConsole 将字符串打印到控制台
+func PrintInConsole(s string) {
 	fmt.Println(s)
 }
 
 // 全局变量声明
-var str string = "ASDFBF"
+// 全局变量示例（保持导出以便其他包访问）
+var Str string = "ASDFBF"
 
 // 主函数启动类
-func main() {
-	fmt.Println(str)
-	fmt.Println("Hello World")
-	fmt.Println("Hello World")
-	fmt.Println("Hello World")
-	fmt.Println("Hello World")
-	fmt.Println("Hello World")
+// init 保持空实现
+func init() {
+
 }
 
 // 系统初始化函数

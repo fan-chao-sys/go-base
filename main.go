@@ -1,4 +1,4 @@
-package GoBase
+package main
 
 import (
 	"fmt"
@@ -16,6 +16,7 @@ func init() {
 
 func main() {
 	fmt.Println("main method invoked!")
+	fmt.Println("mainVar:", mainVar)
 }
 
 func getMainVar() string {
