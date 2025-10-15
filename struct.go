@@ -192,7 +192,7 @@ func NewC() C {
 	}
 }
 
-func main() {
+func main666() {
 	fmt.Println("结构体方法::::::::")
 	c := NewC()
 	cp := &c // 引用c的内存地址 赋值给 cp指针
