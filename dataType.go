@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-func main() {
+func main2() {
 	// ----------------------------------------------------- 十六进制
 	var a uint8 = 0xF
 	var b uint8 = 0xf
