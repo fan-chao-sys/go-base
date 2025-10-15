@@ -3,7 +3,7 @@ package GoBase
 import (
 	"fmt"
 
-	_ "github.com/GoBase/pkg1"
+	_ "github.com/fan-chao-sys/GoBase/pkg1"
 )
 
 const mainName string = "main"

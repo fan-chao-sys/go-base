@@ -3,7 +3,7 @@ package pkg1
 import (
 	"fmt"
 
-	_ "github.com/GoBase/pkg2"
+	_ "github.com/fan-chao-sys/GoBase/pkg2"
 )
 
 const PkgName string = "pkg1"
