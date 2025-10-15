@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 // ------------------------------------------------------------ const 常量
 //	常量值在编译期确定，所以常量定义必须赋值，并不能方法返回值为常量赋值。
 //	常量被定义后，其值不能再被修改。
@@ -116,15 +114,10 @@ const (
 // Genders 使用 iota 关键字就是为了方便我们定义常量的值。
 //
 //	并且当这些枚举值仅作为判断条件使用时，修改非常方便，只需要的其分组增删即可。
-//	注：iota 仅能与 const 关键字配合使用。
-type Genders byte
-
-const (
-	Maleed Genders = iota
-	Femaleed
-)
-
-func main777() {
-	fmt.Print(Maleed)
-	fmt.Print(Femaleed)
-}
+////	注：iota 仅能与 const 关键字配合使用。
+//type Genders byte
+//
+//const (
+//	Maleed Genders = iota
+//	Femaleed
+//)
