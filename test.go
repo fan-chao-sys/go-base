@@ -6,13 +6,13 @@ import (
 	"fmt"
 )
 
-// 函数声明
+// PrintInConsole 函数声明
 // PrintInConsole 将字符串打印到控制台
 func PrintInConsole(s string) {
 	fmt.Println(s)
 }
 
-// 全局变量声明
+// Str 全局变量声明
 // 全局变量示例（保持导出以便其他包访问）
 var Str string = "ASDFBF"
 
