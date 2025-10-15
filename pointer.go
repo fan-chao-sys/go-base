@@ -10,7 +10,7 @@ import (
 var p1 *int
 var p2 *string
 
-func main() {
+func main4() {
 
 	// 初始化指针必须通过另外一个变量， 如果没有赋值
 	// p = &<var name>
