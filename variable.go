@@ -23,7 +23,7 @@ var (
 	s2 = "test"
 )
 
-func main() {
+func main3() {
 
 	// --------------------------------------- 局部变量声明
 	// var <name> <type> = <value> 完整声明形式
