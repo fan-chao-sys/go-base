@@ -4,10 +4,10 @@ import "fmt"
 
 // ---------------------------------- 全局变量（允许声明后不用）
 // var <name> <type> = <value> 完整声明形式
-var a int = 100
+var a100 int = 100
 
 // 仅声明未赋值
-var b string
+var b100 string
 
 // 不声明类型，自动推导变量类型
 var flag = true
@@ -18,9 +18,9 @@ var zero int
 var b1 = true
 
 var (
-	i  int = 123
-	b2 bool
-	s2 = "test"
+	i100 int = 123
+	b2   bool
+	s2   = "test"
 )
 
 func main3() {

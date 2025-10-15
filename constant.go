@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 // ------------------------------------------------------------ const 常量
 //	常量值在编译期确定，所以常量定义必须赋值，并不能方法返回值为常量赋值。
 //	常量被定义后，其值不能再被修改。
@@ -118,6 +120,11 @@ const (
 type Genders byte
 
 const (
-	Malee Genders = iota
-	Femalee
+	Maleed Genders = iota
+	Femaleed
 )
+
+func main777() {
+	fmt.Print(Maleed)
+	fmt.Print(Femaleed)
+}
