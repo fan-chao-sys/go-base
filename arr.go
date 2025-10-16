@@ -91,7 +91,7 @@ func main11() {
 
 	layer1 := arr[0]
 	layer2 := arr[0][1]
-	element := arr[0][1][1]
+	element = arr[0][1][1]
 	fmt.Println(layer1)
 	fmt.Println(layer2)
 	fmt.Println(element)
@@ -107,11 +107,7 @@ func main11() {
 	// --------------------------------------------------------------------------------  数组作参数
 	// 数组部分特性类似基础数据类型，当数组作为参数传递时，在函数中并不能改变外部实参的值。
 	// 如果想要修改外部实参的值，需要把数组的指针作为参数传递给函数。
-	type Custom struct {
-		i int
-	}
-
-	var carr = [5]*Custom{
+	var carr = [5]*Customs{
 		{6},
 		{7},
 		{8},
@@ -128,6 +124,10 @@ func main11() {
 	fmt.Println("after receiveArrayPointer, a = ", ao)
 }
 
+type Customs struct {
+	i int
+}
+
 func receiveArray(param [5]int) {
 	fmt.Println("in receiveArray func, before modify, param = ", param)
 	param[1] = -5
@@ -140,7 +140,7 @@ func receiveArrayPointer(param *[5]int) {
 	fmt.Println("in receiveArrayPointer func, after modify, param = ", param)
 }
 
-func printFuncParamPointer(param [5]*Custom) {
+func printFuncParamPointer(param [5]*Customs) {
 	for i := range param {
 		fmt.Printf("in printFuncParamPointer func, param[%d] = %p, value = %v \n", i, &param[i], *param[i])
 	}
