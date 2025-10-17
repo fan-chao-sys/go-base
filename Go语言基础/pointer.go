@@ -81,7 +81,7 @@ func main4() {
 	upA := uintptr(unsafe.Pointer(&ac))
 	upA += 1
 
-	c := (*uint8)(unsafe.Pointer(upA))
-	fmt.Println("*c", *c)
+	cte := (*uint8)(unsafe.Pointer(upA))
+	fmt.Println("*c", *cte)
 
 }
