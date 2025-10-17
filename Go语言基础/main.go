@@ -1,4 +1,4 @@
-package main
+package Go语言基础
 
 import (
 	_ "github.com/fan-chao-sys/GoBase/pkg1"
