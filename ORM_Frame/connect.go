@@ -1,8 +1,11 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"time"
 )
 
 // 字段标签:
@@ -31,6 +34,7 @@ import (
 //	-				忽略该字段，- 表示无读写，-:migration 表示无迁移权限，-:all 表示无读写迁移权限
 //	comment			迁移时为字段添加注释
 
+// Run 驱动数据库方法
 func Run(db *gorm.DB) {
 	err := db.AutoMigrate(&User{}, &Author{}, &Blog{}, &Blog2{}, &Blog3{})
 	if err != nil {
@@ -38,22 +42,9 @@ func Run(db *gorm.DB) {
 	}
 }
 
-func main() {
-	// 连接数据库
-	// 方法一：
-	dbAddress := "root:root@tcp(127.0.0.1:3306)/go_gorm?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dbAddress), &gorm.Config{})
-	if err != nil {
-	}
-	Run(db)
-
-	// 插入数据
-	user := &User{}
-	user.Age = 100
-	user.MemberNumber.Valid = true // 字段值不明确情况下,指定设置需要写入空字符串,而非自动写入null
-	db.Create(user)
-
-	// 方法二：
+func main321() {
+	// --------------------------------------------------------------------------------------------    连接数据库
+	// 方法一：自定义配置连接设置
 	//_, _ = gorm.Open(mysql.New(mysql.Config{
 	//	DSN:                       "gorm:gorm@tcp(127.0.0.1:3306)/gorm?charset=utf8mb4&parseTime=True&loc=Local",
 	//	DefaultStringSize:         256,   // string 类型字段的默认长度
@@ -62,4 +53,105 @@ func main() {
 	//	DontSupportRenameColumn:   true,  // 用 `change` 重命名列，MySQL 8 之前的数据库和 MariaDB 不支持重命名列
 	//	SkipInitializeWithVersion: false, // 根据当前 MySQL 版本自动配置
 	//}), &gorm.Config{})
+
+	// 方法二：简便连接
+	dbAddress := "root:root@tcp(127.0.0.1:3306)/go_gorm?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.Open(dbAddress), &gorm.Config{})
+	if err != nil {
+	}
+	Run(db)
+
+	// -- 打印SQL语句日志 --
+	db.Debug()
+
+	// ----------------------------------------------------------------------------------------------- SQL构造器-原生写法
+	// scan
+	db.Raw("SELECT id, name, age FROM users WHERE id = ?", 3).Scan(&result)
+	db.Raw("SELECT id, name, age FROM users WHERE name = ?", "jinzhu").Scan(&result)
+	var age int
+	db.Raw("SELECT SUM(age) FROM users WHERE role = ?", "admin").Scan(&age)
+	var users []User
+	db.Raw("UPDATE users SET name = ? WHERE age = ? RETURNING id, name", "jinzhu", 20).Scan(&users)
+
+	// Exec
+	db.Exec("DROP TABLE users")
+	db.Exec("UPDATE orders SET shipped_at = ? WHERE id IN ?", time.Now(), []int64{1, 2, 3})
+	// Exec with SQL Expression
+	db.Exec("UPDATE users SET money = ? WHERE name = ?", gorm.Expr("money * ? + ?", 10000, 1), "jinzhu")
+
+	// DryRun 模式
+	// 在不执行的情况下生成 SQL 及其参数，可以用于准备或测试生成的 SQL
+	stmt := db.Session(&gorm.Session{DryRun: true}).First(&user, 1).Statement
+	s := stmt.SQL.String() //=> SELECT * FROM `users` WHERE `id` = $1 ORDER BY `id`
+	vars := stmt.Vars      //=> []interface{}{1}
+	fmt.Println(s, vars)
+
+	// Row & Rows
+	// 获取 *sql.Row 结果
+	// 用 GORM API 构建 SQL
+	row := db.Table("users").Where("name = ?", "jinzhu").Select("name", "age").Row()
+	name := ""
+	err = row.Scan(&name, &age)
+	if err != nil {
+		return
+	}
+	// 用原生 SQL
+	row = db.Raw("select name, age, email from users where name = ?", "jinzhu").Row()
+	err = row.Scan(&name, &age, &email)
+	if err != nil {
+		return
+	}
+
+	// 获取 *sql.Rows 结果
+	// 使用 GORM API 构建 SQL
+	rows, err := db.Model(&User{}).Where("name = ?", "jinzhu").Select("name, age, email").Rows()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+
+		}
+	}(rows)
+	for rows.Next() {
+		err := rows.Scan(&name, &age, &email)
+		if err != nil {
+			return
+		}
+		// 业务逻辑...
+	}
+
+	// 原生 SQL
+	rows, err = db.Raw("select name, age, email from users where name = ?", "jinzhu").Rows()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+
+		}
+	}(rows)
+	for rows.Next() {
+		err := rows.Scan(&name, &age, &email)
+		if err != nil {
+			return
+		}
+		// 业务逻辑...
+	}
+
+	// 将 sql.Rows 扫描至 model
+	// 使用 ScanRows 将一行记录扫描至 struct
+	rows, err = db.Model(&User{}).Where("name = ?", "jinzhu").Select("name, age, email").Rows() // (*sql.Rows, error)
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+
+		}
+	}(rows)
+
+	var user User
+	for rows.Next() {
+		// ScanRows 将一行扫描至 user
+		err := db.ScanRows(rows, &user)
+		if err != nil {
+			return
+		}
+		// 业务逻辑...
+	}
 }

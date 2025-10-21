@@ -5,6 +5,9 @@
       <functions>
         <function importPath="gorm.io/gorm" name="Open" />
       </functions>
+      <methods>
+        <method importPath="gorm.io/gorm" receiver="*DB" name="Rows" />
+      </methods>
     </inspection_tool>
   </profile>
 </component>

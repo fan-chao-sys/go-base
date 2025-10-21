@@ -2,22 +2,49 @@ package main
 
 import (
 	"database/sql"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"time"
 )
 
+// 全局变量
+var now = time.Now()
+var user = User{Name: "Jinzhu", Age: 18, Birthday: &now}
+var users = []User{
+	{Name: "Jinzhu", Age: 18, Birthday: &now},
+	{Name: "Jackson", Age: 19, Birthday: &now},
+}
+var userCopyArr = []User{{Name: "jinzhu1"}, {Name: "jinzhu2"}, {Name: "jinzhu3"}}
+var userBatch []User
+var teacher = &Teacher{
+	Name:       "jinzhu",
+	CreditCard: CreditCard{Number: "411111111111"},
+}
+var email = Email{}
+var order = Order{}
+var result = Result{}
+var dbAddress = "root:root@tcp(127.0.0.1:3306)/go_gorm?charset=utf8mb4&parseTime=True&loc=Local"
+var db, _ = gorm.Open(mysql.Open(dbAddress), &gorm.Config{})
+
 // User 模型定义
 type User struct {
-	ID           uint           // Standard field for the primary key
-	Name         string         // A regular string field
-	Email        *string        // A pointer to a string, allowing for null values
-	Age          uint8          // An unsigned 8-bit integer
-	Birthday     *time.Time     // A pointer to time.Time, can be null
-	MemberNumber sql.NullString // Uses sql.NullString to handle nullable strings
-	ActivatedAt  sql.NullTime   // Uses sql.NullTime for nullable time fields
-	CreatedAt    time.Time      // Automatically managed by GORM for creation time
-	UpdatedAt    time.Time      // Automatically managed by GORM for update time
-	ignored      string         // fields that aren't exported are ignored
+	ID               uint    // Standard field for the primary key
+	Name             string  // A regular string field
+	Email            *string // A pointer to a string, allowing for null values
+	Age              uint8   // An unsigned 8-bit integer
+	Active           bool
+	Birthday         *time.Time     // A pointer to time.Time, can be null
+	MemberNumber     sql.NullString // Uses sql.NullString to handle nullable strings
+	ActivatedAt      sql.NullTime   // Uses sql.NullTime for nullable time fields
+	CreatedAt        time.Time      // Automatically managed by GORM for creation time
+	UpdatedAt        time.Time      // Automatically managed by GORM for update time
+	DeletedAt        time.Time
+	ignored          string // fields that aren't exported are ignored
+	BillingAddress   interface{}
+	ShippingAddress  interface{}
+	Emails           []Email
+	Languages        []Language
+	BillingAddressID interface{}
 }
 
 // Model 的定义，GORM提供了一个预定义的结构体，名为gorm.Model，其中包含常用字段：
@@ -60,4 +87,54 @@ type Blog3 struct {
 	ID      int
 	Author  Author `gorm:"embedded;embeddedPrefix:author_"`
 	Upvotes int32
+}
+
+type CreditCard struct {
+	gorm.Model
+	Number string
+	UserID uint
+}
+
+type Teacher struct {
+	gorm.Model
+	Name       string
+	CreditCard CreditCard
+}
+
+type Result struct {
+	Date  time.Time
+	Total int
+	Name  string
+	Email string
+}
+
+type Order struct {
+	UserId     int
+	FinishedAt *time.Time
+}
+
+type Email struct {
+	Email string
+}
+
+type Address struct {
+	Address1 string
+	ID       interface{}
+}
+
+type Role struct{}
+
+type User20 struct {
+	gorm.Model
+	Name      string
+	CompanyID uint
+	Company   Company
+	Role      Role
+	Orders    []Order
+}
+
+type Order2 struct {
+	gorm.Model
+	UserID uint
+	Price  float64
 }
