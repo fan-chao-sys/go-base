@@ -37,7 +37,8 @@ func main() {
 	session := db.Session(&gorm.Session{SkipHooks: true})
 	// 使用该会话执行操作（不会触发 BeforeSave/AfterSave 等钩子）
 	session.Create(&User{Name: "test"})
-
+	// 更新修改后对象中的关联信息 ( FullSaveAssociations:true = 允许更新关联信息的值 )！
+	db.Debug().Session(&gorm.Session{FullSaveAssociations: true}).Updates(&userArr)
 	// Table():
 	// 指定要操作的数据库表名（默认使用模型对应的表名，复数形式）
 	// 显式指定表名为 "user_list"（而非默认的 "users"）
@@ -110,4 +111,14 @@ func main() {
 	// Preload():
 	// 程序执行前-预加载关联，一次性加载其关联的模型数据，避免多次数据库查询，提高效率
 	db.Preload("user表外键关联字段名").First(&user, 1)
+	// 加载所有关联的记录
+	db.Preload(clause.Associations).Find(&user)
+	// 嵌套预加载- 加载子表的子表(假设：user的子表有 order表，order表子表有 userOrder表 )
+	db.Preload("order.userOrder").First(&user, 1)
+
+	// Association():
+	// 加载关联对象数据
+	// 加载user.id = 1 的所有关联对象 Languages 并查找后映射给 languages变量
+	var languages []Language
+	db.Model(&User{ID: 1}).Association("Languages").Find(&languages)
 }

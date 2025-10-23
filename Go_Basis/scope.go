@@ -1,4 +1,4 @@
-package Go语言基础
+package Go_Basis
 
 // 变量的作用域
 import (
