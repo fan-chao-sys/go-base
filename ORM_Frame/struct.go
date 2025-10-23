@@ -22,7 +22,6 @@ var teacher = &Teacher{
 }
 var email = Email{}
 var order = Order{}
-var result = Result{}
 var dbAddress = "root:root@tcp(127.0.0.1:3306)/go_gorm?charset=utf8mb4&parseTime=True&loc=Local"
 var db, _ = gorm.Open(mysql.Open(dbAddress), &gorm.Config{})
 
@@ -45,6 +44,7 @@ type User struct {
 	Emails           []Email
 	Languages        []Language
 	BillingAddressID interface{}
+	Role             string
 }
 
 // Model 的定义，GORM提供了一个预定义的结构体，名为gorm.Model，其中包含常用字段：
@@ -137,4 +137,8 @@ type Order2 struct {
 	gorm.Model
 	UserID uint
 	Price  float64
+}
+
+type userPoint struct {
+	ID *uint `gorm:"primaryKey"`
 }

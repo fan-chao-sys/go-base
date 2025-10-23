@@ -22,7 +22,7 @@ func mainDel() {
 	// DELETE FROM users WHERE id = 10;
 	db.Delete(&User{}, "10")
 	// DELETE FROM users WHERE id IN (1,2,3);
-	db.Delete(&users, []int{1, 2, 3})
+	db.Delete(&User{}, []int{1, 2, 3})
 
 	// 批量删除
 	// 如果指定的值不包括主属性，那么 GORM 会执行批量删除，它将删除所有匹配的记录
