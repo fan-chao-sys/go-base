@@ -99,12 +99,15 @@ func main() {
 	rows, err := db.Model(&User{}).Where("age > ?", 18).Rows()
 	if err != nil {
 	}
-	defer rows.Close()
+	defer rows.Close() // 必须调用！释放数据库连接
 	// 迭代行数据
 	for rows.Next() {
-		// 扫描当前行到结构体
+		// 扫描映射当前行到结构体
 		db.ScanRows(rows, &user)
 		// 处理 user
 	}
 
+	// Preload():
+	// 程序执行前-预加载关联，一次性加载其关联的模型数据，避免多次数据库查询，提高效率
+	db.Preload("user表外键关联字段名").First(&user, 1)
 }
