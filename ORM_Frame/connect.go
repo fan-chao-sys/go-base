@@ -66,6 +66,7 @@ func main321() {
 
 	// ----------------------------------------------------------------------------------------------- SQL构造器-原生写法
 	// scan
+	result := Result{}
 	db.Raw("SELECT id, name, age FROM users WHERE id = ?", 3).Scan(&result)
 	db.Raw("SELECT id, name, age FROM users WHERE name = ?", "jinzhu").Scan(&result)
 	var age int
