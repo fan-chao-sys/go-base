@@ -1,9 +1,17 @@
 package main
 
 import (
+	"context"
+	"database/sql/driver"
+	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/logger"
+	"strings"
+	"time"
 )
 
 // foreignKey：指定关联模型（被依赖的 “子模型”） 中存储关联标识的字段（即外键字段本身）。
@@ -12,6 +20,80 @@ import (
 // 假设我们有两个模型 A 和 B，A 关联 B（A 是 “主”，B 是 “子”）：
 //  foreignKey 是 “子模型 B” 身上的 “身份证”，用来记录 “主模型 A” 的标识。
 // 	references 是 “主模型 A” 身上被记录的 “标识字段”（通常是主键或唯一字段）。
+// polymorphic: 开启多态关联
+// Owner： 多态关联标识
+// 固定定义写法:
+//  *polymorphic: 同时指定type和ID（value+Type value+ID）
+//  *polymorphicType: 单独指定type
+//  *polymorphicId: 单独指定ID
+//  *polymorphicValue: 指定type的值，默认为表名
+
+type Dog struct {
+	ID   int
+	Name string
+	Toys []Toy `gorm:"polymorphic:Owner;"`
+}
+
+type Cat struct {
+	ID   int
+	Name string
+	Toys []Toy `gorm:"polymorphic:Owner;"`
+}
+
+type Toy struct {
+	ID        int
+	Name      string
+	OwnerID   int
+	OwnerType string
+}
+
+// Session 配置: 允许创建带配置的新建会话模式
+type Session struct {
+	DryRun                   bool
+	PrepareStmt              bool
+	NewDB                    bool
+	Initialized              bool
+	SkipHooks                bool
+	SkipDefaultTransaction   bool
+	DisableNestedTransaction bool
+	AllowGlobalUpdate        bool
+	FullSaveAssociations     bool
+	QueryFields              bool
+	Context                  context.Context
+	Logger                   logger.Interface
+	NowFunc                  func() time.Time
+	CreateBatchSize          int
+}
+
+// 自定义类型
+type strArr []string
+
+// UserD 自定义数据类型
+type UserD struct {
+	ID     int
+	Skills strArr
+}
+
+func (arr strArr) Value() (driver.Value, error) {
+	return strings.Join(arr, ","), nil
+}
+
+func (arr *strArr) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
+	}
+
+	*arr = strings.Split(string(bytes), ",")
+	return nil
+}
+
+// Post 有许多第三方包实现了 Scanner/Valuer 接口，可与 GORM 一起使用，例如：
+type Post struct {
+	ID    uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
+	Title string
+	Tags  pq.StringArray `gorm:"type:text[]"`
+}
 
 // UserOne  外键关联结构体关系
 // FOREIGN KEY: 一个表中的 FOREIGN KEY 指向另一个表中的 UNIQUE KEY(唯一约束的键)。

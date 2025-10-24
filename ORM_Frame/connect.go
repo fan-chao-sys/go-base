@@ -2,9 +2,14 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/hints"
+	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -145,8 +150,6 @@ func main321() {
 
 		}
 	}(rows)
-
-	var user User
 	for rows.Next() {
 		// ScanRows 将一行扫描至 user
 		err := db.ScanRows(rows, &user)
@@ -155,4 +158,221 @@ func main321() {
 		}
 		// 业务逻辑...
 	}
+
+	// ----------------------------------------------------------------------------------- 事务
+	// 确保数据一致性，GORM在事务执行写入操作（创建、更新、删除）。可在初始化时禁用它，将获得大约 30%+ 性能提升。
+
+	// 全局禁用
+	db, err = gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{SkipDefaultTransaction: true})
+
+	// 持续会话模式
+	tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
+	tx.First(&user, 1)
+	tx.Model(&user).Update("Age", 18)
+
+	db.Transaction(func(tx *gorm.DB) error {
+		// 在事务中执行一些 db 操作（从这里开始，您应该使用 'tx' 而不是 'db'）
+		if err := tx.Create(&User{Name: "Giraffe"}).Error; err != nil {
+			// 返回任何错误都会回滚事务
+			return err
+		}
+		// 返回 nil 提交事务
+		return nil
+	})
+
+	// 嵌套事务
+	db.Transaction(func(tx *gorm.DB) error {
+		tx.Create(&user)
+		tx.Transaction(func(tx2 *gorm.DB) error {
+			tx2.Create(&user)
+			return errors.New("rollback user") // Rollback user2
+		})
+		tx.Transaction(func(tx3 *gorm.DB) error {
+			tx3.Create(&user)
+			return nil
+		})
+		return nil
+	})
+
+	// 手动事务
+	// 开始事务
+	tx = db.Begin()
+	// 在事务中执行一些 db 操作（从这里开始，您应该使用 'tx' 而不是 'db'）
+	tx.Create(&user)
+	tx.Rollback()        // 回滚整个事务,所有操作全部撤回
+	tx.SavePoint("sp1")  // 事务创建 'sp1' 保存点标记位置
+	tx.RollbackTo("sp1") // 回退指定保存点位置 'sp1',只会撤销从该保存点之后 到 调 RollbackTo 之前的数据库操作，而保存点之前的操作仍然有效。
+	// 否则，提交事务
+	tx.Commit()
+
+	// --------------------------------------------------------------------- 性能
+	// GORM 已优化许多提高性能，另一些关于应用改进性能的方法:
+	// *禁用默认事务
+	// *缓存预编译语句
+	// 全局模式
+	db, err = gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{
+		PrepareStmt: true,
+	})
+	// 会话模式
+	tx = db.Session(&gorm.Session{PrepareStmt: true})
+	tx.First(&user, 1)
+	tx.Model(&user).Update("Age", 18)
+	// *选择字段
+	db.Select("Name", "Age").Find(&User{})
+	// *自主选择索引
+	db.Clauses(hints.UseIndex("idx_user_name")).Find(&User{})
+
+	// ------------------------------------------------------------------------Scopes
+	// 作用域允许你复用通用的逻辑，这种共享逻辑需要定义为类型func(*gorm.DB) *gorm.DB
+	db.Scopes(AmountGreaterThan1000, PaidWithCreditCard).Find(&order)
+
+	// 分页
+	r, _ := http.NewRequest("GET", "http://example.com/some/path?page=2&page_size=20", nil)
+	db.Scopes(Paginate(r)).Find(&user)
+	db.Scopes(Paginate(r)).Find(&order)
+
+	// 指定表
+	// Table form different database
+	// SELECT * FROM users_2019;
+	db.Scopes(TableOfYear(&user, 2019)).Find(&user)
+	// SELECT * FROM users_2020;
+	db.Scopes(TableOfYear(&user, 2020)).Find(&user)
+	// SELECT * FROM org1.users;
+	db.Scopes(TableOfOrg(&user, "org1")).Find(&user)
+	// SELECT * FROM org2.users;
+	db.Scopes(TableOfOrg(&user, "org2")).Find(&user)
+
+	// 动态条件
+	// UPDATE articles SET name = "name 1" WHERE org_id = 111
+	db.Model(&order).Scopes(CurOrganization(r)).Update("Name", "name 1")
+	// DELETE FROM articles WHERE org_id = 111
+	db.Scopes(CurOrganization(r)).Delete(&order)
+
+	// ----------------------------------------------------------------------------------------- 设置
+	// Set, Get, InstanceSet, InstanceGet 方法来允许用户传值给 勾子 或其他方法
+	myValue := 123
+	db.Set("my_value", myValue).Create(&User{})
+	// // 在创建关联时，GORM 创建了一个新 `*Statement`，所以它不能读取到其它实例的设置
+	myValueTwo := 123
+	db.InstanceSet("my_value", myValueTwo).Create(&User{})
+}
+
+// AmountGreaterThan1000 作用域 -- scopes
+func AmountGreaterThan1000(db *gorm.DB) *gorm.DB {
+	return db.Where("amount > ?", 1000)
+}
+
+// PaidWithCreditCard 作用域 -- scopes
+func PaidWithCreditCard(db *gorm.DB) *gorm.DB {
+	return db.Where("pay_mode_sign = ?", "C")
+}
+
+// PaidWithCod 作用域 -- scopes
+func PaidWithCod(db *gorm.DB) *gorm.DB {
+	return db.Where("pay_mode_sign = ?", "C")
+}
+
+// OrderStatus 作用域 -- scopes
+func OrderStatus(status []string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("status IN (?)", status)
+	}
+}
+
+// Paginate 分页
+func Paginate(r *http.Request) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		q := r.URL.Query()
+		page, _ := strconv.Atoi(q.Get("page"))
+		if page <= 0 {
+			page = 1
+		}
+
+		pageSize, _ := strconv.Atoi(q.Get("page_size"))
+		switch {
+		case pageSize > 100:
+			pageSize = 100
+		case pageSize <= 0:
+			pageSize = 10
+		}
+
+		offset := (page - 1) * pageSize
+		return db.Offset(offset).Limit(pageSize)
+	}
+}
+
+// TableOfYear 指定表
+func TableOfYear(user *User, year int) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		tableName := user.Name + strconv.Itoa(year)
+		return db.Table(tableName)
+	}
+}
+
+// TableOfOrg 指定表
+func TableOfOrg(user *User, dbName string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		tableName := dbName + "." + user.Name
+		return db.Table(tableName)
+	}
+}
+
+// CurOrganization 动态条件
+func CurOrganization(r *http.Request) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		org := r.Query("org")
+
+		if org != "" {
+			var teacher Teacher
+			if db.Session(&gorm.Session{}).First(&teacher, "name = ?", org).Error == nil {
+				return db.Where("org_id = ?", teacher.ID)
+			}
+		}
+		return db
+	}
+}
+
+type UserT struct {
+	gorm.Model
+	CreditCard CreditCard
+	// ...
+}
+
+func (u *UserT) BeforeCreate(tx *gorm.DB) error {
+	myValue, ok := tx.Get("my_value")
+	// ok => true
+	if ok {
+	}
+	// myValue => 123
+	if myValue == 123 {
+	}
+	return nil
+}
+
+type CreditCardT struct {
+	gorm.Model
+	// ...
+}
+
+func (card *CreditCardT) BeforeCreate(tx *gorm.DB) error {
+	myValue, ok := tx.Get("my_value")
+	// ok => true
+	if ok {
+	}
+	// myValue => 123
+	if myValue == 123 {
+	}
+	return nil
+}
+
+// BeforeCreate 在创建关联时，GORM 创建了一个新 `*Statement`，所以它不能读取到其它实例的设置
+func (card *CreditCard) BeforeCreate(tx *gorm.DB) error {
+	myValue, ok := tx.InstanceGet("my_value")
+	// ok => false
+	if ok {
+	}
+	// myValue => 123
+	if myValue == 123 {
+	}
+	return nil
 }
