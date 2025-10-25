@@ -1,0 +1,7 @@
+templates/index.tmpl
+{{ define "item/a.impl" }} // 存在子目录需要定义配置这种路径格式
+<html>
+  <h1>
+    {{ .title }}
+  </h1>
+</html>
